@@ -1,0 +1,88 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  linting:
+    docker:
+    - image: python:3.7.3-stretch
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: install dependencies
+          command: |
+            cd src
+            python3 -m venv venv
+            . venv/bin/activate
+            make install
+            # Install hadolint
+            wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64 &&\
+            chmod +x /bin/hadolint
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+      # run lint!
+      - run:
+          name: run lint
+          command: |
+            cd src
+            . venv/bin/activate
+            make lint 
+
+  docker:
+    docker:
+      - image: circleci/golang:1.15
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.17
+      - run:
+          name: Build docker image
+          command: |
+            cd src
+            docker build -t hello-world-py:latest .
+            docker image ls
+
+      - run:
+          name: Upload Docker to Dockerhub
+          command: |
+            docker login -u="$DOCKERHUB_USERNAME" -p="$DOCKERHUB_PASSWORD"
+            docker tag hello-world-py:latest $DOCKERHUB_USERNAME/hello-world-py:$CIRCLE_WORKFLOW_ID
+            docker push $DOCKERHUB_USERNAME/hello-world-py:$CIRCLE_WORKFLOW_ID
+
+workflows:
+  default:
+    jobs:
+      - linting
+      - docker:
+          requires:
+            - linting
+          filters:
+            branches:
+              only: [ master ]
+      # - deploy-infrastructure:
+      #     filters:
+      #       branches:
+      #         only: [ master ]
+      # - configure-infrastructure:
+      #     requires:
+      #       - deploy-infrastructure
+      # - configure-cluster:
+      #     requires:
+      #       - configure-infrastructure
+      #       - upload-docker
+      # - deploy-docker:
+      #     requires:
+      #       - configure-cluster
