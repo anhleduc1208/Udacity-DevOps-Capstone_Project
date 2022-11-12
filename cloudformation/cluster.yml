@@ -2,16 +2,16 @@ Description: >
   Felix Lutze / Capstone Project
   Creates an Amazon EKS Cluster
 Parameters:
-  EnvironmentName:
-    Description: An Environment name that will be prefixed to resources
-    Default: capstone-project
+  WORKFLOW_ID:
+    Description: An workflowID that will be prefixed to resources
+    Default: CPROJECT
     Type: String
 
 Resources:
   ClusterInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Sub ${EnvironmentName}-cluster-profile
+      InstanceProfileName: !Sub ${WORKFLOW_ID}-cluster-profile
       Path: "/"
       Roles:
         - !Ref EKSClusterRole
@@ -19,7 +19,7 @@ Resources:
   EKSClusterRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${EnvironmentName}-cluster-role
+      RoleName: !Sub ${WORKFLOW_ID}-cluster-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -39,25 +39,25 @@ Resources:
     Type: AWS::EKS::Cluster
     Properties:
       Version: "1.19"
-      Name: !Sub ${EnvironmentName}-cluster
+      Name: !Sub ${WORKFLOW_ID}-cluster
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
         SecurityGroupIds:
-          - Fn::ImportValue: !Sub ${EnvironmentName}-SCG
+          - Fn::ImportValue: !Sub ${WORKFLOW_ID}-SCG
         SubnetIds:
           Fn::Split:
             - ","
             - Fn::ImportValue:
-                Fn::Sub: ${EnvironmentName}-PUB-NETS
+                Fn::Sub: ${WORKFLOW_ID}-PUB-NETS
 Outputs:
   EksId:
     Description: EKS id
     Value: !Ref CapstoneProjectCluster
     Export:
-      Name: !Sub ${EnvironmentName}-EKSCluster
+      Name: !Sub ${WORKFLOW_ID}-EKSCluster
 
   EKSRoleArn:
     Description: Role for accessing and creating aws resources
     Value: !GetAtt EKSClusterRole.Arn
     Export:
-      Name: !Sub ${EnvironmentName}-EKSRole
+      Name: !Sub ${WORKFLOW_ID}-EKSRole
