@@ -95,7 +95,7 @@ jobs:
               --tags project=uda-capstone-project \
               --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}" \
               --region ${AWS_DEFAULT_REGION} \
-              --parameter-overrides WORKFLOW_ID="${CIRCLE_WORKFLOW_ID:0:7}"
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
           name: Ensure project Cluster exists
           command: |
@@ -104,7 +104,7 @@ jobs:
               --tags project=uda-capstone-project \
               --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}" \
               --region ${AWS_DEFAULT_REGION} \
-              --parameter-overrides WORKFLOW_ID="${CIRCLE_WORKFLOW_ID:0:7} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7} \
               --capabilities CAPABILITY_NAMED_IAM
           no_output_timeout: 20m
       - destroy-environment

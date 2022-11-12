@@ -1,7 +1,7 @@
 Description: >
   Creates the nodegroup for the Amazon EKS Cluster
 Parameters:
-  WORKFLOW_ID:
+  WorkflowId:
     Description: An workflowID that will be prefixed to resources
     Default: CPROJECT
     Type: String
@@ -23,7 +23,7 @@ Parameters:
 
   KeyPairName:
     Description: The EC2 Key Pair to allow SSH access to the instances
-    Default: udacity
+    Default: udacity-devops-ec2
     Type: AWS::EC2::KeyPair::KeyName
 
 Mappings:
@@ -39,7 +39,7 @@ Resources:
   NodeInstanceRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Sub ${WORKFLOW_ID}-nodegroup-role
+      RoleName: !Sub ${WorkflowId}-nodegroup-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -59,9 +59,9 @@ Resources:
   NodeGroup:
     Type: AWS::EKS::Nodegroup
     Properties:
-      ClusterName: !Sub ${WORKFLOW_ID}-cluster
+      ClusterName: !Sub ${WorkflowId}-cluster
       NodeRole: !GetAtt NodeInstanceRole.Arn
-      NodegroupName: !Sub ${WORKFLOW_ID}-nodegroup
+      NodegroupName: !Sub ${WorkflowId}-nodegroup
       ScalingConfig:
         MinSize: !Ref MinSize
         MaxSize: !Ref MaxSize
@@ -70,16 +70,16 @@ Resources:
         Fn::Split:
           - ","
           - Fn::ImportValue:
-              Fn::Sub: ${WORKFLOW_ID}-PUB-NETS
+              Fn::Sub: ${WorkflowId}-PUB-NETS
 
 Outputs:
   NodeInstanceRole:
     Description: The node instance role
     Value: !GetAtt NodeInstanceRole.Arn
     Export:
-      Name: !Sub ${WORKFLOW_ID}-IR
+      Name: !Sub ${WorkflowId}-IR
   NodeGroup:
     Description: The node group for EKS
     Value: !Ref NodeGroup
     Export:
-      Name: !Sub ${WORKFLOW_ID}-NG
+      Name: !Sub ${WorkflowId}-NG
