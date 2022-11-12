@@ -1,6 +1,6 @@
 Description: >
   Creates an Amazon EKS Cluster
-  
+
 Parameters:
   WorkflowId:
     Description: An workflowID that will be prefixed to resources
@@ -38,7 +38,7 @@ Resources:
   CapstoneProjectCluster:
     Type: AWS::EKS::Cluster
     Properties:
-      Version: "1.19"
+      Version: "1.23"
       Name: !Sub ${WorkflowId}-cluster
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
