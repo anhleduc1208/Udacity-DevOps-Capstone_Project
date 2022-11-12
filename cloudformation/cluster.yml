@@ -1,5 +1,4 @@
 Description: >
-  Felix Lutze / Capstone Project
   Creates an Amazon EKS Cluster
 Parameters:
   WORKFLOW_ID:

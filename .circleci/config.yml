@@ -93,7 +93,7 @@ jobs:
             aws cloudformation deploy \
               --template-file cloudformation/network.yml \
               --tags project=uda-capstone-project \
-              --stack-name "network-&{CIRCLE_WORKFLOW_ID:0:7}" \
+              --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}" \
               --region ${AWS_DEFAULT_REGION} \
               --parameter-overrides WORKFLOW_ID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
