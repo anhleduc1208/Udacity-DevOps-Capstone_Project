@@ -1,5 +1,6 @@
 Description: >
   Creates an Amazon EKS Cluster
+  
 Parameters:
   WorkflowId:
     Description: An workflowID that will be prefixed to resources

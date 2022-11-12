@@ -18,7 +18,8 @@ commands:
           when: on_fail
           command: |
             aws cloudformation delete-stack --stack-name "network-<<parameters.workflow_id>>"
-            aws cloudformation delete-stack --stack-name "udapeople-frontend-<<parameters.workflow_id>>"
+            aws cloudformation delete-stack --stack-name "cluster-<<parameters.workflow_id>>"
+            aws cloudformation delete-stack --stack-name "nodegroup-<<parameters.workflow_id>>"
 jobs:
   linting:
     docker:
@@ -107,17 +108,19 @@ jobs:
               --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7} \
               --capabilities CAPABILITY_NAMED_IAM
           no_output_timeout: 20m
+      - run:
+          name: Ensure Nodegroup exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/nodegroup.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "nodegroup-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7} \
+              --capabilities CAPABILITY_NAMED_IAM
+
       - destroy-environment
-      # - run:
-      #     name: Ensure Nodegroup exists
-      #     command: |
-      #       aws cloudformation deploy \
-      #         --template-file cloudformation/nodegroup.yml \
-      #         --tags project=${ENVIRONMENT_NAME}-project \
-      #         --stack-name "${ENVIRONMENT_NAME}-eks-nodegroup" \
-      #         --region ${AWS_DEFAULT_REGION} \
-      #         --parameter-overrides file://cloudformation/nodegroup-parameters.json \
-      #         --capabilities CAPABILITY_NAMED_IAM
+
       # - run:
       #     name: Ensure management instances exists
       #     command: |
@@ -159,19 +162,20 @@ jobs:
           command: |
             aws cloudformation delete-stack --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}"
+            aws cloudformation delete-stack --stack-name "nodegroup-${CIRCLE_WORKFLOW_ID:0:7}"
 workflows:
   default:
     jobs:
-      - linting
+      # - linting
       # - docker:
       #     requires:
       #       - linting
           # filters:
           #   branches:
           #     only: [ master ]
-      - deploy-infrastructure:
-          requires:
-            - linting
+      - deploy-infrastructure
+          # requires:
+          #   - linting
           # filters:
           #   branches:
           #     only: [ master ]
