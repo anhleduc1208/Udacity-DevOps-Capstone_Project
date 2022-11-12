@@ -3,6 +3,22 @@
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
 version: 2.1
+
+commands:
+  destroy-environment:
+    description: Destroy all cloudformation stacks given a workflow ID.
+    parameters:
+      # Add parameter here
+      workflow_id:
+        default: "${CIRCLE_WORKFLOW_ID:0:7}"
+        type: string
+    steps:
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack --stack-name "network-<<parameters.workflow_id>>"
+            aws cloudformation delete-stack --stack-name "udapeople-frontend-<<parameters.workflow_id>>"
 jobs:
   linting:
     docker:
@@ -70,38 +86,28 @@ jobs:
       - run:
           name: Install dependencies
           command: yum install -y tar gzip
+
       - run:
-          name: Check aws connect
+          name: Ensure project network exists
           command: |
-            aws ec2 describe-instances \
-              --region "${AWS_DEFAULT_REGION}" \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=${ENVIRONMENT_NAME}-management*" \
-              --output text >> ~/inventory.txt
-            cat ~/inventory.txt
-
-
-
-      # - run:
-      #     name: Ensure EKS network exists
-      #     command: |
-      #       aws cloudformation deploy \
-      #         --template-file cloudformation/network.yml \
-      #         --tags project=${ENVIRONMENT_NAME}-project \
-      #         --stack-name "${ENVIRONMENT_NAME}-eks-network" \
-      #         --region ${AWS_DEFAULT_REGION} \
-      #         --parameter-overrides file://cloudformation/network-parameters.json
-      # - run:
-      #     name: Ensure EKS Cluster exists
-      #     command: |
-      #       aws cloudformation deploy \
-      #         --template-file cloudformation/cluster.yml \
-      #         --tags project=${ENVIRONMENT_NAME}-project \
-      #         --stack-name "${ENVIRONMENT_NAME}-eks-cluster" \
-      #         --region ${AWS_DEFAULT_REGION} \
-      #         --parameter-overrides file://cloudformation/cluster-parameters.json \
-      #         --capabilities CAPABILITY_NAMED_IAM
-      #     no_output_timeout: 15m
+            aws cloudformation deploy \
+              --template-file cloudformation/network.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "network-&{CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WORKFLOW_ID="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
+          name: Ensure project Cluster exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/cluster.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WORKFLOW_ID="${CIRCLE_WORKFLOW_ID:0:7} \
+              --capabilities CAPABILITY_NAMED_IAM
+          no_output_timeout: 20m
+      - destroy-environment
       # - run:
       #     name: Ensure Nodegroup exists
       #     command: |
@@ -138,8 +144,21 @@ jobs:
       #     paths:
       #       - inventory.txt
       #       - checkIfDeployed.txt
+      
 
-
+  destroy-infra-test:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: yum install -y tar gzip
+      - run:
+          name: Destroy environments
+          command: |
+            aws cloudformation delete-stack --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}"
+            aws cloudformation delete-stack --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}"
 workflows:
   default:
     jobs:
@@ -156,6 +175,9 @@ workflows:
           # filters:
           #   branches:
           #     only: [ master ]
+      - destroy-infra-test:
+          requires:
+            - deploy-infrastructure
       # - configure-infrastructure:
       #     requires:
       #       - deploy-infrastructure
