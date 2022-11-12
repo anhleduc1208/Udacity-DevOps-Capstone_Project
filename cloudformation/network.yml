@@ -4,7 +4,7 @@ Description: >
 
 Parameters:
   WORKFLOW_ID:
-    Description: An environment name that will be prefixed to resource names
+    Description: A workflowID that will be prefixed to resource names
     Default: CPROJECT
     Type: String
 
@@ -46,7 +46,7 @@ Resources:
           Value: !Sub ${WORKFLOW_ID}-VPC
 
   InternetGateway:
-    Type: "AWS::EC2::InternetGateway"s
+    Type: "AWS::EC2::InternetGateway"
 
   VPCGatewayAttachment:
     Type: "AWS::EC2::VPCGatewayAttachment"
