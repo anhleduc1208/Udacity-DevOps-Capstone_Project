@@ -6,7 +6,7 @@
   become: yes
   tasks:
     - name: Get the LoadBalancer's DNS name
-      shell: "kubectl get svc capstone-project-service"
+      shell: "kubectl -n kube-system get svc capstone-project-service -o json | jq .status.loadBalancer.ingress.hostname"
       register: elb_dns
       args:
         chdir: $HOME
