@@ -19,4 +19,3 @@ spec:
           image: anhleduc1208/hello-world-py
           ports:
             - containerPort: 80
-kubectl set image deployments/capstone-project-deployment hello-world-py=anhleduc1208/hello-world-py:9fc6bcd
