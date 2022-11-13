@@ -43,3 +43,5 @@
   pre_tasks:
     - name: Create a kubeconfig file for the cluster
       shell: "aws eks update-kubeconfig --region {{ AWS_DEFAULT_REGION }} --name {{ WORKFLOW_ID }}-cluster"
+    - name: Check connect to the cluster
+      shell: "kubectl get node"

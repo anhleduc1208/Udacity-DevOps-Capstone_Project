@@ -9,6 +9,11 @@
   args:
     chdir: $HOME
 
+- name: "Check kubectl"
+  shell: ./kubectl get -h
+  args:
+    chdir: $HOME
+
 - name: "Copy the binary to a folder to the $PATH"
   shell: mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
   args:

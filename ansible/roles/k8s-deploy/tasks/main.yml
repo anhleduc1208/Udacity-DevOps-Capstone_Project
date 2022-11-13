@@ -3,6 +3,16 @@
     src: "app-deployment.yaml"
     dest: $HOME
 
+- name: Check kubectl connect
+  shell: "./kubectl get -h"
+  args:
+    chdir: $HOME
+
+- name: Check kubectl connect
+  shell: "./bin/kubectl get -h"
+  args:
+    chdir: $HOME
+
 - name: Apply deployment configuration
   shell: "./bin/kubectl apply -f app-deployment.yaml"
   args:
