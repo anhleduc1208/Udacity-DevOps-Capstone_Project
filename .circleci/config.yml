@@ -88,15 +88,15 @@ jobs:
       - run:
           name: Install dependencies
           command: yum install -y tar gzip
-      # - run:
-      #     name: Ensure project network exists
-      #     command: |
-      #       aws cloudformation deploy \
-      #         --template-file cloudformation/network.yml \
-      #         --tags project=uda-capstone-project \
-      #         --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}" \
-      #         --region ${AWS_DEFAULT_REGION} \
-      #         --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
+          name: Ensure project network exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/network.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
       # - run:
       #     name: Ensure project Cluster exists
       #     command: |
@@ -109,15 +109,15 @@ jobs:
       #         --capabilities CAPABILITY_NAMED_IAM
       #     no_output_timeout: 20m
       # - run:
-          name: Ensure Nodegroup exists
-          command: |
-            aws cloudformation deploy \
-              --template-file cloudformation/nodegroup.yml \
-              --tags project=uda-capstone-project \
-              --stack-name "nodegroup-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --region ${AWS_DEFAULT_REGION} \
-              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
-              --capabilities CAPABILITY_NAMED_IAM
+          # name: Ensure Nodegroup exists
+          # command: |
+          #   aws cloudformation deploy \
+          #     --template-file cloudformation/nodegroup.yml \
+          #     --tags project=uda-capstone-project \
+          #     --stack-name "nodegroup-${CIRCLE_WORKFLOW_ID:0:7}" \
+          #     --region ${AWS_DEFAULT_REGION} \
+          #     --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
+          #     --capabilities CAPABILITY_NAMED_IAM
       - run:
           name: Ensure agency instance exists
           command: |
