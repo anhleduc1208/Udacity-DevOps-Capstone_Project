@@ -4,6 +4,6 @@
     dest: $HOME
 
 - name: Apply service configuration
-  shell: "./bin/kubectl apply -f app-service.yaml"
+  shell: "kubectl apply -f app-service.yaml"
   args:
     chdir: $HOME
