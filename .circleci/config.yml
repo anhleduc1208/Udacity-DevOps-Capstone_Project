@@ -187,16 +187,17 @@ jobs:
       - run:
           name: Apply Deploy and Service to EKS cluster
           command: |
-              cat ~/inventory.txt
-              cd ansible
-              ansible-playbook -i ~/inventory.txt deploy-k8s.yml
+            cat ~/inventory.txt
+            export WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:7}
+            cd ansible
+            ansible-playbook -i ~/inventory.txt deploy-k8s.yml
               
       - run:
           name: Wait for LoadBalancer's domain to become reachable
           command: |
-              cat ~/inventory.txt
-              echo "Wait 60 seconds..."
-              sleep 60
+            cat ~/inventory.txt
+            echo "Wait 60 seconds..."
+            sleep 60
       - run:
           name: Get the LoadBalancer's DNS name
           command: |
@@ -208,9 +209,67 @@ jobs:
           root: ~/
           paths:
             - elb_dns.txt
-      # - destroy-environment
+      - destroy-environment
       
+  smoke-test-app:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      # Checkout code from git
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Frontend smoke test.
+          command: |
+            cat ~/elb_dns.txt
+            export URL=${cat ~/elb_dns.txt}
+            echo $URL 
+            if curl -s $URL | grep "Hello World"
+            then
+              exit 0
+            else
+              exit 1
+            fi
+      # Here's where you will add some code to rollback on failure
+      - destroy-environment
 
+  cleanup:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      # Checkout code from git
+      - checkout
+      - run:
+          name: Get old stack workflow id and remove
+          command: |
+            # your code here
+            echo CIRCLE_WORKFLOW_ID "${CIRCLE_WORKFLOW_ID:0:7}"
+            export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+                    --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
+            echo Stack names: "${STACKS[@]}"
+            echo '------------------'
+            export CLUSTERSTACKS=($(aws cloudformation describe-stacks --no-paginate --query 'Stacks[?StackName!=`null`]|[?contains(StackName, `cluster`) == `true`].StackName' --output text))
+            echo List cluster stacks: "${CLUSTERSTACKS[@]}"
+            echo '--------------------'
+            for CLUSTERSTACK in "${CLUSTERSTACKS[@]}"
+            do
+              OldWorkflowID=${CLUSTERSTACK: -7}
+              echo '--------------------'
+              echo handling cleanup workflowID: "${OldWorkflowID}"
+              if [[ "${OldWorkflowID}" != "${CIRCLE_WORKFLOW_ID:0:7}" ]]
+              then
+                echo removing resources of OldWorkflowID: "${OldWorkflowID}"
+                aws cloudformation delete-stack --stack-name agency-${OldWorkflowID}
+                aws cloudformation delete-stack --stack-name nodegroup-${OldWorkflowID}
+                aws cloudformation delete-stack --stack-name cluster-${OldWorkflowID}
+                aws cloudformation delete-stack --stack-name network-${OldWorkflowID}
+                echo done removing
+              else
+                echo '------------------ this is the current workflow -----------------'
+              fi
+              echo '--------------------'
+            done
   
   destroy-infra-test:
     docker:
@@ -227,6 +286,7 @@ jobs:
             aws cloudformation delete-stack --stack-name "nodegroup-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}"
+
 workflows:
   default:
     jobs:
@@ -250,9 +310,9 @@ workflows:
           requires:
             - configure-infrastructure
             - build-and-upload-docker-image
-      # - destroy-infra-test:
-      #     requires:
-      #       - configure-infrastructure
-      # - deploy-docker:
-      #     requires:
-      #       - configure-cluster
+      - smoke-test-app:
+          requires:
+            - deploy-k8s
+      - cleanup:
+          requires:
+            - smoke-test-app
