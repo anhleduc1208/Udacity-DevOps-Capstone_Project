@@ -25,6 +25,7 @@ Project is created with:
 - .circleci : Configuration CircleCI Pipeline file
 - cloudformation: contains Cloudformation IaC files that helps to create infra on AWS
 - ansible: contains ansible config file to connect to EC2 on AWS and set up the app on EKS cluster
+- screenshots: contains all screenshot files for submission
 
 ## Linting using Pylint and Hadolint
 
