@@ -1,0 +1,9 @@
+---
+- name: "Deploy hello-world app to the EKS cluster with kubectl"
+  hosts: agency
+  user: ubuntu
+  gather_facts: false
+  become: yes
+  roles:
+    - k8s-deployment
+    - k8s-service
