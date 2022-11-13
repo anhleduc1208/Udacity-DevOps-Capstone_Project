@@ -119,14 +119,14 @@ jobs:
               --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
               --capabilities CAPABILITY_NAMED_IAM
       - run:
-          name: Ensure agency instances exists
+          name: Ensure agency instance exists
           command: |
             aws cloudformation deploy \
               --template-file cloudformation/agency.yml \
               --tags project=uda-capstone-project \
               --stack-name "agency-${CIRCLE_WORKFLOW_ID:0:7}" \
               --region ${AWS_DEFAULT_REGION} \
-              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7} 
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
           name: Find the IPs of the agency instance for Ansible inventory
           command: |
