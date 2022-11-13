@@ -88,27 +88,27 @@ jobs:
       - run:
           name: Install dependencies
           command: yum install -y tar gzip
-      - run:
-          name: Ensure project network exists
-          command: |
-            aws cloudformation deploy \
-              --template-file cloudformation/network.yml \
-              --tags project=uda-capstone-project \
-              --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --region ${AWS_DEFAULT_REGION} \
-              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
-      - run:
-          name: Ensure project Cluster exists
-          command: |
-            aws cloudformation deploy \
-              --template-file cloudformation/cluster.yml \
-              --tags project=uda-capstone-project \
-              --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --region ${AWS_DEFAULT_REGION} \
-              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
-              --capabilities CAPABILITY_NAMED_IAM
-          no_output_timeout: 20m
-      - run:
+      # - run:
+      #     name: Ensure project network exists
+      #     command: |
+      #       aws cloudformation deploy \
+      #         --template-file cloudformation/network.yml \
+      #         --tags project=uda-capstone-project \
+      #         --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}" \
+      #         --region ${AWS_DEFAULT_REGION} \
+      #         --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
+      # - run:
+      #     name: Ensure project Cluster exists
+      #     command: |
+      #       aws cloudformation deploy \
+      #         --template-file cloudformation/cluster.yml \
+      #         --tags project=uda-capstone-project \
+      #         --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}" \
+      #         --region ${AWS_DEFAULT_REGION} \
+      #         --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
+      #         --capabilities CAPABILITY_NAMED_IAM
+      #     no_output_timeout: 20m
+      # - run:
           name: Ensure Nodegroup exists
           command: |
             aws cloudformation deploy \
@@ -230,26 +230,26 @@ jobs:
 workflows:
   default:
     jobs:
-      - linting
-      - build-and-upload-docker-image:
-          requires:
-            - linting
+      # - linting
+      # - build-and-upload-docker-image:
+          # requires:
+            # - linting
       #     # filters:
       #     #   branches:
       #     #     only: [ master ]
-      - deploy-infrastructure:
-          requires:
-            - linting
+      - deploy-infrastructure
+          # requires:
+          #   - linting
           # filters:
           #   branches:
           #     only: [ master ]
       - configure-infrastructure:
           requires:
             - deploy-infrastructure
-      - deploy-k8s:
-          requires:
-            - configure-infrastructure
-            - build-and-upload-docker-image
+      # - deploy-k8s:
+      #     requires:
+      #       - configure-infrastructure
+      #       - build-and-upload-docker-image
       # - destroy-infra-test:
       #     requires:
       #       - configure-infrastructure
