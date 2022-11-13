@@ -22,6 +22,6 @@
         chdir: $HOME
 
     - name: Check if deployment ist successful
-      shell: "kubectl rollout status deployments/{{ ENVIRONMENT_NAME }}-deployment"
+      shell: "kubectl rollout status deployments/capstone-project-deployment"
       args:
         chdir: $HOME
