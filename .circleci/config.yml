@@ -208,7 +208,7 @@ jobs:
           root: ~/
           paths:
             - elb_dns.txt
-      - destroy-environment
+      # - destroy-environment
       
 
   
