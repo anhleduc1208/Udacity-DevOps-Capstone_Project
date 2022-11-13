@@ -6,7 +6,7 @@
   become: yes
   tasks:
     - name: Get the LoadBalancer's DNS name
-      shell: "./bin/kubectl get svc app-service"
+      shell: "kubectl get svc app-service"
       register: elb_dns
       args:
         chdir: $HOME
