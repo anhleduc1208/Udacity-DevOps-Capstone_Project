@@ -4,26 +4,31 @@
   # args:
   #   chdir: $HOME
 
-- name: "Apply execute permissions to the binary"
-  shell: chmod +x kubectl
-  # args:
-  #   chdir: $HOME
-
-# - name: "Check kubectl"
-#   shell: kubectl get -h
+# - name: "Apply execute permissions to the binary"
+#   shell: chmod +x kubectl
 #   # args:
 #   #   chdir: $HOME
 
-- name: "Copy the binary to a folder to the $PATH"
-  shell: |
-    mkdir -p ~/.local/bin && mv ./kubectl ~/.local/bin/kubectl && export PATH=~/.local/bin
-  # args:
-  #   chdir: $HOME
-
-- name: "Add the $HOME/bin path to the shell initialization file"
-  shell: echo 'export PATH=~/.local/bin' >> .bashrc
+- name: "Install kubectl"
+  shell: sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
   # args:
   #   chdir: $HOME
 
 - name: "Check kubectl"
-  shell: kubectl get -h
+  shell: kubectl version --client
+
+
+# - name: "Copy the binary to a folder to the $PATH"
+#   shell: |
+#     mkdir -p ~/.local/bin && mv ./kubectl ~/.local/bin/kubectl && export PATH=~/.local/bin
+#   # args:
+#   #   chdir: $HOME
+
+# - name: "Add the $HOME/bin path to the shell initialization file"
+#   shell: echo 'export PATH=~/.local/bin' >> .bashrc
+#   # args:
+#   #   chdir: $HOME
+
+# - name: "Check kubectl"
+#   shell: kubectl get -h
+
