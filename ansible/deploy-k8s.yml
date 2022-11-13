@@ -5,5 +5,5 @@
   gather_facts: false
   become: yes
   roles:
-    - k8s-deployment
+    - k8s-deploy
     - k8s-service
