@@ -1,6 +1,6 @@
 Description: >
   Creates the nodegroup for the Amazon EKS Cluster
-  
+
 Parameters:
   WorkflowId:
     Description: An workflowID that will be prefixed to resources
@@ -24,7 +24,7 @@ Parameters:
 
   KeyPairName:
     Description: The EC2 Key Pair to allow SSH access to the instances
-    Default: udacity-devops-ec2
+    Default: udacity-capstone
     Type: AWS::EC2::KeyPair::KeyName
 
 Mappings:

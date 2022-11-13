@@ -2,14 +2,6 @@
 
 The final project of the Cloud DevOps Engineer
 
-## Table of contents
-
-- [General info](#general-info)
-- [Folder structure](#folder-structure)
-- [Tools](#technologies)
-- [Usage](#setup)
-- [Result](#result)
-
 ## General info
 
 The Application is based on a python3 script using <a target="_blank" href="https://flask.palletsprojects.com">flask</a> to render a simple webpage in the user's browser.
@@ -34,24 +26,57 @@ Project is created with:
 - cloudformation: contains Cloudformation IaC files that helps to create infra on AWS
 - ansible: contains ansible config file to connect to EC2 on AWS and set up the app on EKS cluster
 
+## Linting using Pylint and Hadolint
+
+Linting is used to check if the Application and Dockerfile is syntactically correct.
+This process makes sure that the code quality is always as good as possible.
+
+## DockerHub
+
+I used Dockerhub to store my app's image
+
+## Kubernetes Cluster
+
+I used AWS CloudFormation to create Infrastructure needed for the application
+The CloudFormation Deployment can be broken down into four Parts:
+
+- **Networking**, to ensure all about the network for the cluster
+- **Elastic Kubernetes Service (EKS)** is used to create a Kubernetes Cluster
+- **NodeGroup**, each NodeGroup has a set of rules to define how instances are operated and created for the EKS-Cluster
+- **Agency** is needed to configure and manage the Cluster and its deployments and services.
+
+## CircleCi - CI/CD Pipelines
+
+I used CircleCi to create a CI/CD Pipeline to deployed application automatically to the Cluster using Ansible and Cloudformation.
+
 ## Usage
 
 To run this project in CircleCI, you have to:
 
-- Fork the project to your Github Account
 - Setup and Configure CirceCI account with Github and AWS Credentials
 - Setup DockerHub account.
-- AWS : create an IAM user and a ssh key
+- AWS : create an IAM user and a ssh pem key then store in your local
 - Configure enviroment variables AWS_DEAFULT_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, DOCKERHUB_PASSWORD, DOCKERHUB_USERNAME in your CircleCI account
+- Configure ssh key with the ssh pem key above to help circleci (ansible) can connect to your AWS ec2
 - Change the build job from config.yml in order to include your DockerHub credentials, for example :
 
 ```
-docker build -t thanhbao0390/nginx-hello .
-docker tag nginx-hello:latest ${DOCKERHUB_USERNAME}/nginx-hello:latest
-docker push thanhbao0390/nginx-hello
+docker build -t anhleduc1208/hello-world-py:latest .
+docker tag hello-world-py:latest $DOCKERHUB_USERNAME/hello-world-py:${CIRCLE_WORKFLOW_ID:0:7}
+docker push $DOCKERHUB_USERNAME/hello-world-py:${CIRCLE_WORKFLOW_ID:0:7}
 
 ```
 
 ## Result
+
+Pipeline failed by the Linting
+
+Pipeline success with lint job
+
+Lists of EC2
+
+Dockerhub Repo
+
+EKS service and deployment after ci/cd pipeline finish
 
 Public LoadBalancer DNS:

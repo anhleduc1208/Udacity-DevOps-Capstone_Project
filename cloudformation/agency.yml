@@ -8,7 +8,7 @@ Parameters:
     Type: String
   SSHKeyName:
     Description: SSH key for agency access
-    Default: udacity-devops-ec2
+    Default: udacity-capstone
     Type: String
   amiImageId:
     Description: Defines the Image-ID of the OS to deploy
@@ -27,7 +27,7 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
 
-  AgencyEc2:
+  EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
