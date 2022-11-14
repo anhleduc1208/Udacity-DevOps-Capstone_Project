@@ -71,13 +71,24 @@ docker push $DOCKERHUB_USERNAME/hello-world-py:${CIRCLE_WORKFLOW_ID:0:7}
 ## Result
 
 Pipeline failed by the Linting
+(./screenshots/lint_fail.png)
 
 Pipeline success with lint job
+(./screenshots/lint_success.png)
 
 Lists of EC2
+(./screenshots/list_ec2.png)
 
 Dockerhub Repo
+(./screenshots/docker_hub.png)
 
 EKS service and deployment after ci/cd pipeline finish
+(./screenshots/k8s_info.png)
 
-Public LoadBalancer DNS:
+ELB Dns
+(./screenshots/success_app.png)
+
+Success CI-CD pipeline
+(./screenshots/success_workflow.png)
+
+Public LoadBalancer DNS: http://aacf98e493aa043fc96d7c1b44b53fc0-1931962586.us-east-1.elb.amazonaws.com/

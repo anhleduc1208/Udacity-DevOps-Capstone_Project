@@ -284,25 +284,34 @@ workflows:
       - build-and-upload-docker-image:
           requires:
             - linting
-      #     # filters:
-      #     #   branches:
-      #     #     only: [ master ]
+          filters:
+            branches:
+              only: [ main ]
       - deploy-infrastructure:
           requires:
             - linting
-          # filters:
-          #   branches:
-          #     only: [ master ]
+          filters:
+            branches:
+              only: [ main ]
       - configure-infrastructure:
           requires:
             - deploy-infrastructure
+          filters:
+            branches:
+              only: [ main ]
       - deploy-k8s:
           requires:
             - configure-infrastructure
             - build-and-upload-docker-image
+          filters:
+            branches:
+              only: [ main ]
       - smoke-test-app:
           requires:
             - deploy-k8s
+          filters:
+            branches:
+              only: [ main ]
       - cleanup:
           requires:
             - smoke-test-app
