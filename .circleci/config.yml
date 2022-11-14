@@ -2,7 +2,25 @@
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-version: 2
+version: 2.1
+
+commands:
+  destroy-environment:
+    description: Destroy all cloudformation stacks given a workflow ID.
+    parameters:
+      # Add parameter here
+      workflow_id:
+        default: "${CIRCLE_WORKFLOW_ID:0:7}"
+        type: string
+    steps:
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack --stack-name "nodegroup-<<parameters.workflow_id>>"
+            aws cloudformation delete-stack --stack-name "cluster-<<parameters.workflow_id>>"
+            aws cloudformation delete-stack --stack-name "network-<<parameters.workflow_id>>"
+            aws cloudformation delete-stack --stack-name "agency-<<parameters.workflow_id>>"
 jobs:
   linting:
     docker:
@@ -14,7 +32,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
+            - v1-dependencies-{{ checksum "src/requirements.txt" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
@@ -31,7 +49,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+          key: v1-dependencies-{{ checksum "src/requirements.txt" }}
 
       # run lint!
       - run:
@@ -41,7 +59,7 @@ jobs:
             . venv/bin/activate
             make lint 
 
-  docker:
+  build-and-upload-docker-image:
     docker:
       - image: circleci/golang:1.15
     steps:
@@ -59,30 +77,241 @@ jobs:
           name: Upload Docker to Dockerhub
           command: |
             docker login -u="$DOCKERHUB_USERNAME" -p="$DOCKERHUB_PASSWORD"
-            docker tag hello-world-py:latest $DOCKERHUB_USERNAME/hello-world-py:$CIRCLE_WORKFLOW_ID
-            docker push $DOCKERHUB_USERNAME/hello-world-py:$CIRCLE_WORKFLOW_ID
+            docker tag hello-world-py:latest $DOCKERHUB_USERNAME/hello-world-py:${CIRCLE_WORKFLOW_ID:0:7}
+            docker push $DOCKERHUB_USERNAME/hello-world-py:${CIRCLE_WORKFLOW_ID:0:7}
 
+  deploy-infrastructure:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: yum install -y tar gzip
+      - run:
+          name: Ensure project network exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/network.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
+          name: Ensure project Cluster exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/cluster.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --capabilities CAPABILITY_NAMED_IAM
+          no_output_timeout: 20m
+      - run:
+          name: Ensure Nodegroup exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/nodegroup.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "nodegroup-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --capabilities CAPABILITY_NAMED_IAM
+      - run:
+          name: Ensure agency instance exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/agency.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "agency-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
+          name: Find the IPs of the agency instance for Ansible inventory
+          command: |
+            echo [agency] > ~/inventory.txt
+            aws ec2 describe-instances \
+              --region "${AWS_DEFAULT_REGION}" \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Name,Values=${CIRCLE_WORKFLOW_ID:0:7}-agency" \
+              --output text >> ~/inventory.txt
+            cat ~/inventory.txt
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - inventory.txt
+      - destroy-environment
+      
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "74:83:93:c0:94:3d:15:e7:42:cd:c0:17:74:5c:bf:e0"
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            pip install awscli
+            apk add --update ansible
+            apk add --update tar
+            apk add --update gzip
+      - run:
+          name: Configure server
+          command: |
+              cat ~/inventory.txt
+              cd ansible
+              export WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:7}
+              ansible-playbook -i ~/inventory.txt configure-server.yml
+      - destroy-environment  
+
+  deploy-k8s:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "74:83:93:c0:94:3d:15:e7:42:cd:c0:17:74:5c:bf:e0"
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            pip install awscli
+            apk add --update ansible
+      - run:
+          name: Apply Deploy and Service to EKS cluster
+          command: |
+            cat ~/inventory.txt
+            export WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:7}
+            cd ansible
+            ansible-playbook -i ~/inventory.txt deploy-k8s.yml
+              
+      - run:
+          name: Wait for LoadBalancer's domain to become reachable
+          command: |
+            cat ~/inventory.txt
+            echo "Wait 60 seconds..."
+            sleep 60
+      - run:
+          name: Get the LoadBalancer's DNS name
+          command: |
+            cat ~/inventory.txt
+            cd ansible
+            ansible-playbook -i ~/inventory.txt get-elb-dns.yml
+            cat ~/elb_dns.txt
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - elb_dns.txt
+      # - destroy-environment
+      
+  smoke-test-app:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      # Checkout code from git
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install awscli
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+      - run:
+          name: Frontend smoke test.
+          command: |
+            cat ~/elb_dns.txt
+            export URL=$(cat ~/elb_dns.txt)
+            echo $URL 
+            if curl -s $URL | grep "Hello World"
+            then
+              exit 0
+            else
+              exit 1
+            fi
+      # Here's where you will add some code to rollback on failure
+      # - destroy-environment
+
+  cleanup:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      # Checkout code from git
+      - checkout
+      - run:
+          name: Get old stack workflow id and remove
+          command: |
+            # your code here
+            echo CIRCLE_WORKFLOW_ID "${CIRCLE_WORKFLOW_ID:0:7}"
+            export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+                    --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
+            echo Stack names: "${STACKS[@]}"
+            echo '------------------'
+            export CLUSTERSTACKS=($(aws cloudformation describe-stacks --no-paginate --query 'Stacks[?StackName!=`null`]|[?contains(StackName, `cluster`) == `true`].StackName' --output text))
+            echo List cluster stacks: "${CLUSTERSTACKS[@]}"
+            echo '--------------------'
+            for CLUSTERSTACK in "${CLUSTERSTACKS[@]}"
+            do
+              OldWorkflowID=${CLUSTERSTACK: -7}
+              echo '--------------------'
+              echo handling cleanup workflowID: "${OldWorkflowID}"
+              if [[ "${OldWorkflowID}" != "${CIRCLE_WORKFLOW_ID:0:7}" ]]
+              then
+                echo removing resources of OldWorkflowID: "${OldWorkflowID}"
+                aws cloudformation delete-stack --stack-name agency-${OldWorkflowID}
+                aws cloudformation delete-stack --stack-name nodegroup-${OldWorkflowID}
+                aws cloudformation delete-stack --stack-name cluster-${OldWorkflowID}
+                aws cloudformation delete-stack --stack-name network-${OldWorkflowID}
+                echo done removing
+              else
+                echo '------------------ this is the current workflow -----------------'
+              fi
+              echo '--------------------'
+            done
+  
 workflows:
   default:
     jobs:
       - linting
-      - docker:
+      - build-and-upload-docker-image:
           requires:
             - linting
           filters:
             branches:
-              only: [ master ]
-      # - deploy-infrastructure:
-      #     filters:
-      #       branches:
-      #         only: [ master ]
-      # - configure-infrastructure:
-      #     requires:
-      #       - deploy-infrastructure
-      # - configure-cluster:
-      #     requires:
-      #       - configure-infrastructure
-      #       - upload-docker
-      # - deploy-docker:
-      #     requires:
-      #       - configure-cluster
+              only: [ main ]
+      - deploy-infrastructure:
+          requires:
+            - linting
+          filters:
+            branches:
+              only: [ main ]
+      - configure-infrastructure:
+          requires:
+            - deploy-infrastructure
+          filters:
+            branches:
+              only: [ main ]
+      - deploy-k8s:
+          requires:
+            - configure-infrastructure
+            - build-and-upload-docker-image
+          filters:
+            branches:
+              only: [ main ]
+      - smoke-test-app:
+          requires:
+            - deploy-k8s
+          filters:
+            branches:
+              only: [ main ]
+      - cleanup:
+          requires:
+            - smoke-test-app

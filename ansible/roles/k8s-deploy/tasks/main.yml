@@ -1,0 +1,15 @@
+- name: Copy deployment configuration
+  copy:
+    src: "app-deployment.yaml"
+    dest: $HOME
+
+- name: Check kubectl connect
+  shell: "kubectl get -h"
+  args:
+    chdir: $HOME
+
+
+- name: Apply deployment configuration
+  shell: "kubectl apply -f app-deployment.yaml"
+  args:
+    chdir: $HOME

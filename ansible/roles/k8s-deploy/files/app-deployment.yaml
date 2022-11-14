@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capstone-project-deployment
+  labels:
+    app: hello-world-py
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-world-py
+  template:
+    metadata:
+      labels:
+        app: hello-world-py
+    spec:
+      containers:
+        - name: hello-world-py
+          image: anhleduc1208/hello-world-py
+          ports:
+            - containerPort: 80

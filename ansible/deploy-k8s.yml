@@ -1,0 +1,27 @@
+---
+- name: "Deploy hello-world app to the EKS cluster with kubectl"
+  hosts: agency
+  user: ubuntu
+  gather_facts: false
+  become: yes
+  roles:
+    - k8s-deploy
+    - k8s-service
+
+- name: "Update docker image"
+  hosts: agency
+  user: ubuntu
+  gather_facts: false
+  become: yes
+  vars:
+    WORKFLOW_ID: "{{ lookup('env', 'WORKFLOW_ID') }}"
+  tasks:
+    - name: Update the deployment to run the latest Build
+      shell: "kubectl set image deployments/capstone-project-deployment hello-world-py=anhleduc1208/hello-world-py:{{ WORKFLOW_ID }}"
+      args:
+        chdir: $HOME
+
+    - name: Check if deployment ist successful
+      shell: "kubectl rollout status deployments/capstone-project-deployment"
+      args:
+        chdir: $HOME
