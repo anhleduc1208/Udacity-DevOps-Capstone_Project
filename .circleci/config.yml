@@ -229,7 +229,7 @@ jobs:
           name: Frontend smoke test.
           command: |
             cat ~/elb_dns.txt
-            export URL=${cat ~/elb_dns.txt}
+            export URL=$(cat ~/elb_dns.txt)
             echo $URL 
             if curl -s $URL | grep "Hello World"
             then
