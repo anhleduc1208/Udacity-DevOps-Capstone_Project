@@ -89,6 +89,6 @@ ELB Dns
 (./screenshots/success_app.png)
 
 Success CI-CD pipeline
-(./screenshots/success_workflow.png)
+![](./screenshots/success_workflow.png)
 
 Public LoadBalancer DNS: http://aacf98e493aa043fc96d7c1b44b53fc0-1931962586.us-east-1.elb.amazonaws.com/
