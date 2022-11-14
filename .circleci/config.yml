@@ -97,27 +97,27 @@ jobs:
               --stack-name "network-${CIRCLE_WORKFLOW_ID:0:7}" \
               --region ${AWS_DEFAULT_REGION} \
               --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}"
-      # - run:
-      #     name: Ensure project Cluster exists
-      #     command: |
-      #       aws cloudformation deploy \
-      #         --template-file cloudformation/cluster.yml \
-      #         --tags project=uda-capstone-project \
-      #         --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}" \
-      #         --region ${AWS_DEFAULT_REGION} \
-      #         --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
-      #         --capabilities CAPABILITY_NAMED_IAM
-      #     no_output_timeout: 20m
-      # - run:
-      #     name: Ensure Nodegroup exists
-      #     command: |
-      #       aws cloudformation deploy \
-      #         --template-file cloudformation/nodegroup.yml \
-      #         --tags project=uda-capstone-project \
-      #         --stack-name "nodegroup-${CIRCLE_WORKFLOW_ID:0:7}" \
-      #         --region ${AWS_DEFAULT_REGION} \
-      #         --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
-      #         --capabilities CAPABILITY_NAMED_IAM
+      - run:
+          name: Ensure project Cluster exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/cluster.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "cluster-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --capabilities CAPABILITY_NAMED_IAM
+          no_output_timeout: 20m
+      - run:
+          name: Ensure Nodegroup exists
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudformation/nodegroup.yml \
+              --tags project=uda-capstone-project \
+              --stack-name "nodegroup-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --region ${AWS_DEFAULT_REGION} \
+              --parameter-overrides WorkflowId="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --capabilities CAPABILITY_NAMED_IAM
       - run:
           name: Ensure agency instance exists
           command: |
@@ -150,7 +150,7 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints:
-            - "f9:b4:c1:38:93:de:58:bb:28:b0:6b:7c:2c:c6:6c:90"
+            - "	74:83:93:c0:94:3d:15:e7:42:cd:c0:17:74:5c:bf:e0"
       - attach_workspace:
           at: ~/
       - run:
@@ -167,7 +167,7 @@ jobs:
               cd ansible
               export WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:7}
               ansible-playbook -i ~/inventory.txt configure-server.yml
-      # - destroy-environment  
+      - destroy-environment  
 
   deploy-k8s:
     docker:
@@ -176,7 +176,7 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints:
-            - "f9:b4:c1:38:93:de:58:bb:28:b0:6b:7c:2c:c6:6c:90"
+            - "	74:83:93:c0:94:3d:15:e7:42:cd:c0:17:74:5c:bf:e0"
       - attach_workspace:
           at: ~/
       - run:
@@ -281,9 +281,9 @@ workflows:
   default:
     jobs:
       - linting
-      # - build-and-upload-docker-image:
-      #     requires:
-      #       - linting
+      - build-and-upload-docker-image:
+          requires:
+            - linting
       #     # filters:
       #     #   branches:
       #     #     only: [ master ]
@@ -296,13 +296,13 @@ workflows:
       - configure-infrastructure:
           requires:
             - deploy-infrastructure
-      # - deploy-k8s:
-      #     requires:
-      #       - configure-infrastructure
-      #       - build-and-upload-docker-image
-      # - smoke-test-app:
-      #     requires:
-      #       - deploy-k8s
-      # - cleanup:
-      #     requires:
-      #       - smoke-test-app
+      - deploy-k8s:
+          requires:
+            - configure-infrastructure
+            - build-and-upload-docker-image
+      - smoke-test-app:
+          requires:
+            - deploy-k8s
+      - cleanup:
+          requires:
+            - smoke-test-app
